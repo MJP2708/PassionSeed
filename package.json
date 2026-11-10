@@ -10,8 +10,8 @@
     "postinstall": "node scripts/select-db.mjs && prisma generate",
     "db:select": "node scripts/select-db.mjs",
     "db:push": "npm run db:select && prisma db push",
-    "db:seed": "npm run db:select && tsx prisma/seed.ts",
-    "db:reset": "npm run db:select && prisma db push --force-reset && tsx prisma/seed.ts",
+    "db:seed": "npm run db:select && tsx --env-file-if-exists=.env.local prisma/seed.ts",
+    "db:reset": "npm run db:select && prisma db push --force-reset && tsx --env-file-if-exists=.env.local prisma/seed.ts",
     "test:summary": "tsx scripts/test-summary.ts"
   },
   "dependencies": {
