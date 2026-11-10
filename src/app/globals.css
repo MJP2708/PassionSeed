@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #faf8f3;
+  --color-card: #ffffff;
+  --color-ink: #1c1b19;
+  --color-muted: #57534e;
+  --color-line: #e4dfd4;
+  --color-hl: #ffe066;
+  --color-ok: #2f6b3b;
+  --color-bad: #9b2c1f;
+  --font-sans: var(--font-itim), "Noto Sans Thai", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Shared building blocks */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-card p-4;
+  }
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-ink bg-ink px-4 text-base text-paper transition active:scale-[.98] disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-card px-4 text-base text-ink transition active:scale-[.98] disabled:opacity-50;
+  }
+  .field {
+    @apply block min-h-11 w-full rounded-xl border border-line bg-card px-3 py-2 text-base text-ink placeholder:text-muted/80;
+  }
+  .label {
+    @apply mb-1 block text-base text-ink;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border border-line bg-paper px-2.5 py-0.5 text-sm text-ink;
+  }
+  .chip-hl {
+    @apply inline-flex items-center rounded-full bg-hl px-2.5 py-0.5 text-sm text-ink;
+  }
+}

@@ -1,0 +1,101 @@
+// Enums are stored as strings and dates (date-only) as "YYYY-MM-DD" strings,
+// so the same schema works on SQLite (local) and Postgres (Neon).
+// The provider line is rewritten by scripts/select-db.mjs — don't edit it by hand.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  nickname       String
+  role           String // STUDENT | BUDDY | TEACHER
+  classroom      String?
+  volunteerHours Float        @default(0)
+  absences       Absence[]
+  tasks          Task[]
+  uploads        NoteUpload[]
+  createdAt      DateTime     @default(now())
+}
+
+model Subject {
+  id          String           @id // e.g. "math"
+  name        String
+  teacherName String
+  sortOrder   Int              @default(0)
+  requests    TeacherRequest[]
+  tasks       Task[]
+  notes       NoteUpload[]
+}
+
+model Absence {
+  id             String           @id @default(cuid())
+  studentId      String
+  student        User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  eventName      String
+  startDate      String // YYYY-MM-DD
+  endDate        String // YYYY-MM-DD
+  letterUrl      String?
+  wantsExtension Boolean          @default(true)
+  requests       TeacherRequest[]
+  notes          NoteUpload[]
+  createdAt      DateTime         @default(now())
+}
+
+model TeacherRequest {
+  id              String    @id @default(cuid())
+  absenceId       String
+  absence         Absence   @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  subjectId       String
+  subject         Subject   @relation(fields: [subjectId], references: [id])
+  status          String    @default("PENDING") // PENDING | REPLIED
+  topics          String?
+  workType        String    @default("NONE") // NONE | WORKSHEET | QUIZ
+  originalDueDate String?
+  dueDate         String?
+  extensionStatus String    @default("REQUESTED") // NONE | REQUESTED | APPROVED | DENIED
+  repliedAt       DateTime?
+  task            Task?
+
+  @@unique([absenceId, subjectId])
+}
+
+model Task {
+  id        String          @id @default(cuid())
+  studentId String
+  student   User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId String?
+  subject   Subject?        @relation(fields: [subjectId], references: [id])
+  requestId String?         @unique
+  request   TeacherRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  title     String
+  dueDate   String // YYYY-MM-DD
+  extended  Boolean         @default(false)
+  done      Boolean         @default(false)
+  source    String          @default("MANUAL") // TEACHER | MANUAL
+  createdAt DateTime        @default(now())
+}
+
+model NoteUpload {
+  id            String   @id @default(cuid())
+  absenceId     String
+  absence       Absence  @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id])
+  buddyId       String
+  buddy         User     @relation(fields: [buddyId], references: [id], onDelete: Cascade)
+  date          String // YYYY-MM-DD — the class day these notes are from
+  photoUrls     String // JSON array of URLs
+  emphasis      String?
+  summaryJson   String?
+  summaryStatus String   @default("PENDING") // PENDING | PROCESSING | READY | ERROR
+  summaryError  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
