@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { todayISO } from "@/lib/dates";
+import { PageHeader } from "@/components/ui";
 import { TaskList } from "./TaskList";
 import { AddTaskForm } from "./AddTaskForm";
 
@@ -15,12 +16,8 @@ export default async function TasksPage() {
   const today = todayISO();
 
   return (
-    <div className="space-y-5 py-3">
-      <div>
-        <h1 className="text-2xl">ตามงาน</h1>
-        <p className="text-muted">งานทุกวิชารวมไว้ที่เดียว เรียงตามวันส่ง</p>
-      </div>
-      <AddTaskForm subjects={subjects.map((s) => ({ id: s.id, name: s.name }))} today={today} />
+    <div className="space-y-7">
+      <PageHeader title="ตามงาน">งานทุกวิชารวมไว้ที่เดียว เรียงตามวันส่ง</PageHeader>
       <TaskList
         today={today}
         tasks={tasks.map((t) => ({
@@ -33,6 +30,7 @@ export default async function TasksPage() {
           subjectName: t.subject?.name ?? null,
         }))}
       />
+      <AddTaskForm subjects={subjects.map((s) => ({ id: s.id, name: s.name }))} today={today} />
     </div>
   );
 }

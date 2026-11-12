@@ -3,6 +3,7 @@
 import { useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { generateSummary, retrySummary } from "@/app/actions/notes";
+import { Spinner } from "@/components/ui";
 
 /** Kicks off the AI summary when the page opens with a pending note. */
 export function SummaryRunner({ noteId, status }: { noteId: string; status: string }) {
@@ -16,7 +17,7 @@ export function SummaryRunner({ noteId, status }: { noteId: string; status: stri
     }
     if (status === "PROCESSING") {
       // Someone else is running it — poll until it's done.
-      const t = setInterval(() => router.refresh(), 4000);
+      const t = setInterval(() => router.refresh(), 3000);
       return () => clearInterval(t);
     }
   }, [noteId, status, router]);
@@ -30,7 +31,7 @@ export function RetryButton({ noteId, label = "ลองสรุปใหม่
   return (
     <button
       type="button"
-      className="btn-ghost"
+      className="btn-quiet"
       disabled={pending}
       onClick={() =>
         start(async () => {
@@ -39,7 +40,13 @@ export function RetryButton({ noteId, label = "ลองสรุปใหม่
         })
       }
     >
-      {pending ? "AI กำลังอ่านรูป…" : label}
+      {pending ? (
+        <>
+          <Spinner /> AI กำลังอ่านรูป
+        </>
+      ) : (
+        label
+      )}
     </button>
   );
 }

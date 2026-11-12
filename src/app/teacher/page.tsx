@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { formatRange, formatThai } from "@/lib/dates";
+import { PageHeader, SectionLabel } from "@/components/ui";
 import { ReplyForm } from "./ReplyForm";
 
 export const metadata = { title: "คำขอจากนักเรียน · PassionSeed" };
 
-const EXT_LABEL: Record<string, string> = { APPROVED: "อนุมัติเลื่อน +3 วัน", DENIED: "ไม่อนุมัติเลื่อน" };
+const EXT_LABEL: Record<string, string> = { APPROVED: "เลื่อน +3 วัน", DENIED: "ไม่เลื่อน" };
 const WORK_LABEL: Record<string, string> = { NONE: "ไม่มีงาน", WORKSHEET: "ใบงาน", QUIZ: "สอบย่อย" };
 
 export default async function TeacherPage() {
@@ -18,20 +19,20 @@ export default async function TeacherPage() {
   const replied = requests.filter((r) => r.status === "REPLIED");
 
   const header = (r: (typeof requests)[number]) => (
-    <div className="space-y-0.5">
-      <p className="flex flex-wrap items-baseline justify-between gap-x-2">
-        <span className="text-lg">{r.subject.name}</span>
-        <span className="text-sm text-muted">{r.subject.teacherName}</span>
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h3 className="text-[20px] leading-snug">{r.subject.name}</h3>
+        <span className="meta">{r.subject.teacherName}</span>
+      </div>
+      <p className="font-ui text-[15px]">
+        {r.absence.student.nickname} <span className="text-muted">· {r.absence.student.name} · {r.absence.student.classroom}</span>
       </p>
-      <p>
-        {r.absence.student.nickname} ({r.absence.student.name}) · {r.absence.student.classroom}
-      </p>
-      <p className="text-sm text-muted">
+      <p className="meta">
         {r.absence.eventName} · ขาด {formatRange(r.absence.startDate, r.absence.endDate)}
         {r.absence.letterUrl && (
           <>
             {" · "}
-            <a href={r.absence.letterUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">ดูจดหมาย</a>
+            <a href={r.absence.letterUrl} target="_blank" rel="noopener noreferrer" className="text-ink underline decoration-1 underline-offset-4">ดูจดหมาย</a>
           </>
         )}
       </p>
@@ -48,45 +49,46 @@ export default async function TeacherPage() {
   });
 
   return (
-    <div className="space-y-6 py-3">
-      <div>
-        <h1 className="text-2xl">คำขอจากนักเรียน</h1>
-        <p className="text-muted">
-          สวัสดี {user.nickname} · <span className="text-sm">เดโม: บัญชีนี้ตอบแทนครูได้ทุกวิชา</span>
-        </p>
-      </div>
+    <div className="space-y-9">
+      <PageHeader kicker={`${user.nickname} · เดโม: ตอบแทนครูได้ทุกวิชา`} title="คำขอจากนักเรียน">
+        บอกว่าสอนอะไรไป มีงานอะไร และจะให้เลื่อนส่งหรือไม่ ระบบจะใส่ลงรายการงานของนักเรียนให้เอง
+      </PageHeader>
 
       <section aria-labelledby="pending" className="space-y-3">
-        <h2 id="pending" className="flex items-center gap-2 text-lg">
-          {pending.length > 0 ? <span className="chip-hl">รอตอบ {pending.length}</span> : "รอตอบ"}
-        </h2>
-        {pending.length === 0 && <p className="text-muted">ตอบครบทุกคำขอแล้ว</p>}
+        <SectionLabel id="pending" aside={pending.length ? undefined : "ครบแล้ว"}>
+          {pending.length > 0 ? <span className="marker">รอตอบ {pending.length} คำขอ</span> : "รอตอบ"}
+        </SectionLabel>
+        {pending.length === 0 && <p className="meta">ตอบครบทุกคำขอแล้ว</p>}
         {pending.map((r) => (
-          <article key={r.id} className="card space-y-4 border-ink">
+          <article key={r.id} className="sheet space-y-5 p-4 sm:p-5">
             {header(r)}
-            <ReplyForm req={view(r)} />
+            <div className="border-t border-rule pt-5">
+              <ReplyForm req={view(r)} />
+            </div>
           </article>
         ))}
       </section>
 
-      <section aria-labelledby="replied" className="space-y-3">
-        <h2 id="replied" className="text-lg">ตอบแล้ว ({replied.length})</h2>
-        {replied.map((r) => (
-          <details key={r.id} className="card group">
-            <summary className="flex min-h-11 cursor-pointer list-none flex-col gap-1">
-              {header(r)}
-              <span className="flex flex-wrap gap-1.5 text-sm">
-                <span className="chip">{WORK_LABEL[r.workType]}</span>
-                {r.dueDate && <span className="chip">ส่ง {formatThai(r.dueDate)}</span>}
-                {EXT_LABEL[r.extensionStatus] && <span className="chip">{EXT_LABEL[r.extensionStatus]}</span>}
-                <span className="ml-auto text-muted group-open:hidden">แก้ไข ▾</span>
-              </span>
-            </summary>
-            <div className="mt-4 border-t border-line pt-4">
-              <ReplyForm req={view(r)} />
-            </div>
-          </details>
-        ))}
+      <section aria-labelledby="replied">
+        <SectionLabel id="replied" aside={`${replied.length} คำขอ`}>ตอบแล้ว</SectionLabel>
+        <div className="divide-y divide-rule">
+          {replied.map((r) => (
+            <details key={r.id} className="group py-1">
+              <summary className="-mx-2 flex min-h-11 cursor-pointer list-none flex-col gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-sheet [&::-webkit-details-marker]:hidden">
+                {header(r)}
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-ui text-[13.5px]">
+                  <span className="tag">{WORK_LABEL[r.workType]}</span>
+                  {r.dueDate && <span className="tag">ส่ง {formatThai(r.dueDate)}</span>}
+                  {EXT_LABEL[r.extensionStatus] && <span className="tag">{EXT_LABEL[r.extensionStatus]}</span>}
+                  <span className="ml-auto text-muted underline decoration-1 underline-offset-4 group-open:hidden">แก้ไข</span>
+                </span>
+              </summary>
+              <div className="pt-3 pb-4">
+                <ReplyForm req={view(r)} />
+              </div>
+            </details>
+          ))}
+        </div>
       </section>
     </div>
   );

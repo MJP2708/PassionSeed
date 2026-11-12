@@ -2,17 +2,23 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { addDays, formatRange, formatThai, todayISO } from "@/lib/dates";
-import { ProgressBar } from "@/components/ProgressBar";
-import { NoteStatus } from "@/components/NoteStatus";
+import { Meter, PageHeader, SectionLabel, Status } from "@/components/ui";
+import { IconArrow } from "@/components/Icons";
 import { UploadForm } from "./UploadForm";
 
 export const metadata = { title: "บัดดี้ · PassionSeed" };
 
 const GOAL_HOURS = 10;
 
+function NoteStatus({ status }: { status: string }) {
+  if (status === "READY") return <Status tone="ok">สรุปพร้อม</Status>;
+  if (status === "ERROR") return <Status tone="wait">ดูรูปต้นฉบับ</Status>;
+  return <Status tone="ink">AI กำลังสรุป</Status>;
+}
+
 export default async function BuddyPage() {
   const user = await requireUser();
-  if (user.role === "TEACHER") return <p className="py-6">หน้านี้สำหรับนักเรียนและบัดดี้</p>;
+  if (user.role === "TEACHER") return <p className="pt-6">หน้านี้สำหรับนักเรียนและบัดดี้</p>;
   return user.role === "BUDDY" ? <BuddyView userId={user.id} /> : <StudentNotes userId={user.id} />;
 }
 
@@ -33,22 +39,24 @@ async function BuddyView({ userId }: { userId: string }) {
     }),
   ]);
   const hours = me.volunteerHours;
+  const left = Math.max(0, Math.ceil((GOAL_HOURS - hours) / 0.5));
 
   return (
-    <div className="space-y-5 py-3">
-      <div>
-        <h1 className="text-2xl">สวัสดี {me.nickname} 👋</h1>
-        <p className="text-muted">ช่วยเพื่อนที่ไปแข่ง ด้วยการส่งรูปโน้ตในคาบเรียน</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader kicker="บัดดี้" title={`สวัสดี ${me.nickname}`}>
+        ช่วยเพื่อนที่ไปแข่ง ด้วยการถ่ายรูปกระดานหรือโน้ตในคาบเรียน
+      </PageHeader>
 
-      <section className="card space-y-2" aria-labelledby="hours">
-        <h2 id="hours" className="flex items-baseline justify-between">
-          <span>ชั่วโมงจิตอาสา</span>
-          <span className="text-2xl">{hours} <span className="text-base text-muted">/ {GOAL_HOURS} ชม.</span></span>
-        </h2>
-        <ProgressBar value={Math.min(hours, GOAL_HOURS)} max={GOAL_HOURS} label="ชั่วโมงจิตอาสาเทียบกับเป้า 10 ชั่วโมง" />
-        <p className="text-sm text-muted">
-          {hours >= GOAL_HOURS ? "ครบเป้าแล้ว ขอบคุณมาก!" : `อัปโหลด 1 ครั้ง = 0.5 ชม. · อีก ${Math.ceil((GOAL_HOURS - hours) / 0.5)} ครั้งครบเป้า`}
+      <section aria-labelledby="hours" className="space-y-2.5">
+        <div className="flex items-end justify-between gap-3">
+          <h2 id="hours" className="font-ui text-[15px] font-medium">ชั่วโมงจิตอาสา</h2>
+          <p className="text-[34px] leading-none tabular-nums">
+            {hours}<span className="text-[18px] text-muted"> / {GOAL_HOURS} ชม.</span>
+          </p>
+        </div>
+        <Meter value={Math.min(hours * 2, GOAL_HOURS * 2)} max={GOAL_HOURS * 2} label="ชั่วโมงจิตอาสา เทียบกับเป้า 10 ชั่วโมง" />
+        <p className="meta">
+          {left === 0 ? "ครบเป้าแล้ว ขอบคุณมาก" : `ส่งโน้ต 1 ครั้ง = 0.5 ชม. · อีก ${left} ครั้งครบเป้า`}
         </p>
       </section>
 
@@ -64,18 +72,19 @@ async function BuddyView({ userId }: { userId: string }) {
         }))}
       />
 
-      <section aria-labelledby="mine" className="space-y-2">
-        <h2 id="mine" className="text-lg">โน้ตที่ส่งไปแล้ว</h2>
-        {uploads.length === 0 && <p className="text-muted">ยังไม่มี</p>}
-        <ul className="space-y-2">
+      <section aria-labelledby="mine">
+        <SectionLabel id="mine" aside={uploads.length ? `${uploads.length} ครั้ง` : undefined}>โน้ตที่ส่งไปแล้ว</SectionLabel>
+        {uploads.length === 0 && <p className="meta py-3">ยังไม่ได้ส่งโน้ต</p>}
+        <ul className="divide-y divide-rule">
           {uploads.map((n) => (
             <li key={n.id}>
-              <Link href={`/notes/${n.id}`} className="card flex min-h-11 items-center justify-between gap-2">
-                <span>
-                  <span className="block">{n.subject.name} · {formatThai(n.date)}</span>
-                  <span className="block text-sm text-muted">ให้ {n.absence.student.nickname}</span>
+              <Link href={`/notes/${n.id}`} className="-mx-2 flex min-h-16 items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-sheet">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[17.5px]">{n.subject.name}</span>
+                  <span className="meta block">คาบ {formatThai(n.date)} · ให้ {n.absence.student.nickname}</span>
                 </span>
                 <NoteStatus status={n.summaryStatus} />
+                <IconArrow className="h-4 w-4 text-muted" />
               </Link>
             </li>
           ))}
@@ -96,35 +105,31 @@ async function StudentNotes({ userId }: { userId: string }) {
   });
 
   return (
-    <div className="space-y-5 py-3">
-      <div>
-        <h1 className="text-2xl">โน้ตจากบัดดี้</h1>
-        <p className="text-muted">เพื่อนส่งรูปโน้ตมาให้ พร้อมสรุปโดย AI</p>
-      </div>
-      {absences.length === 0 && <p className="card text-muted">ยังไม่มีการขาดเรียน</p>}
+    <div className="space-y-8">
+      <PageHeader title="โน้ตจากบัดดี้">เพื่อนถ่ายรูปโน้ตมาให้ พร้อมสรุปโดย AI</PageHeader>
+      {absences.length === 0 && <p className="meta">ยังไม่มีการขาดเรียน</p>}
       {absences.map((a) => {
         const waiting = a.requests.filter((r) => !a.notes.some((n) => n.subjectId === r.subjectId));
         return (
-          <section key={a.id} className="space-y-2" aria-labelledby={`a-${a.id}`}>
-            <h2 id={`a-${a.id}`} className="text-lg">
-              {a.eventName} <span className="text-base text-muted">· {formatRange(a.startDate, a.endDate)}</span>
-            </h2>
-            <ul className="space-y-2">
+          <section key={a.id} aria-labelledby={`a-${a.id}`}>
+            <SectionLabel id={`a-${a.id}`} aside={formatRange(a.startDate, a.endDate)}>{a.eventName}</SectionLabel>
+            <ul className="divide-y divide-rule">
               {a.notes.map((n) => (
                 <li key={n.id}>
-                  <Link href={`/notes/${n.id}`} className="card flex min-h-11 items-center justify-between gap-2">
-                    <span>
-                      <span className="block">{n.subject.name} · {formatThai(n.date)}</span>
-                      <span className="block text-sm text-muted">จาก {n.buddy.nickname}</span>
+                  <Link href={`/notes/${n.id}`} className="-mx-2 flex min-h-16 items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-sheet">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[17.5px]">{n.subject.name}</span>
+                      <span className="meta block">คาบ {formatThai(n.date)} · จาก {n.buddy.nickname}</span>
                     </span>
                     <NoteStatus status={n.summaryStatus} />
+                    <IconArrow className="h-4 w-4 text-muted" />
                   </Link>
                 </li>
               ))}
               {waiting.map((r) => (
-                <li key={r.id} className="card flex items-center justify-between text-muted">
-                  <span>{r.subject.name}</span>
-                  <span className="chip">รอบัดดี้</span>
+                <li key={r.id} className="flex min-h-16 items-center justify-between gap-3 py-3">
+                  <span className="text-[17.5px] text-muted">{r.subject.name}</span>
+                  <Status tone="wait">รอบัดดี้</Status>
                 </li>
               ))}
             </ul>

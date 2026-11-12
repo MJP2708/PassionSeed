@@ -61,3 +61,12 @@ export function datesInRange(start: string, end: string): string[] {
   for (let d = start; d <= end && out.length < 31; d = addDays(d, 1)) out.push(d);
   return out;
 }
+
+export function dayOf(iso: string): number {
+  return toUTC(iso).getUTCDate();
+}
+
+/** "พ.ย." */
+export function monthShort(iso: string): string {
+  return toUTC(iso).toLocaleDateString("th-TH", { timeZone: "UTC", month: "short" });
+}
